@@ -1,15 +1,24 @@
 KMODULE_NAME = ssv6x5x
 
-ARCH ?= arm
-KSRC ?= $(HOME)/firmware/output/build/linux-custom
-CROSS_COMPILE ?= $(HOME)/firmware/output/per-package/linux/host/opt/ext-toolchain/bin/arm-linux-
+KBUILD_TOP := drivers/net/wireless/ssv6x5x
+ifeq ($(MAKELEVEL),0)
+KBUILD_TOP := .
+endif
 
-KBUILD_TOP ?= $(PWD)
-SSV_DRV_PATH ?= $(PWD)
+include $(KBUILD_TOP)/$(KMODULE_NAME).cfg
+include $(KBUILD_TOP)/platform-config.mak
 
-include $(KBUILD_TOP)/config.mak
+# Generate version strings
+# GEN_VER := $(shell cd $(KBUILD_TOP); ./ver_info.pl include/ssv_version.h)
+# Generate include/ssv_conf_parser.h
+# GEN_CONF_PARSER := $(shell cd $(KBUILD_TOP); env ccflags="$(ccflags-y)" ./parser-conf.sh include/ssv_conf_parser.h)
+# Generate $(KMODULE_NAME)-wifi.cfg
+BKP_CFG := $(shell cp $(KBUILD_TOP)/$(KMODULE_NAME)-wifi.cfg $(KBUILD_TOP)/image/$(KMODULE_NAME)-wifi.cfg)
 
 EXTRA_CFLAGS := -I$(KBUILD_TOP) -I$(KBUILD_TOP)/include
+
+DEF_PARSER_H = $(KBUILD_TOP)/include/ssv_conf_parser.h
+$(shell env ccflags="$(ccflags-y)" $(KBUILD_TOP)/parser-conf.sh $(DEF_PARSER_H))
 
 KERN_SRCS := ssvdevice/ssvdevice.c
 KERN_SRCS += ssvdevice/ssv_cmd.c
@@ -100,12 +109,32 @@ obj-$(CONFIG_SSV6X5X) += $(KMODULE_NAME).o
 .PHONY: all ver modules clean
 
 all: modules
-
+	
 modules:
-	$(MAKE) -C $(KSRC) M=$(SSV_DRV_PATH) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) modules
+	$(MAKE) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) -C $(KSRC) M=$(shell pwd) modules
 
 strip:
-	$(CROSS_COMPILE)strip $(KMODULE_NAME).ko --strip-unneeded
+	$(CROSS_COMPILE)strip $(MODULE_NAME).ko --strip-unneeded
+
+#install:
+#	install -p -m 644 $(MODULE_NAME).ko  $(MODDESTDIR)
+#	/sbin/depmod -a ${KVER}
+#
+#uninstall:
+#	rm -f $(MODDESTDIR)/$(MODULE_NAME).ko
+#	/sbin/depmod -a ${KVER}
 
 clean:
-	$(MAKE) -C $(KSRC) M=$(SSV_DRV_PATH) ARCH=$(ARCH) CROSS_COMPILE=$(CROSS_COMPILE) clean
+	rm -fr *.mod.c *.mod *.o .*.cmd *.ko *~
+	rm -fr .tmp_versions
+	rm -fr Module.symvers
+	rm -fr Module.markers
+	rm -fr modules.order
+	rm -fr image/$(KMODULE_NAME)-wifi.cfg
+	cd ssvdevice/; 		rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+	cd hci/; 			rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+	cd smac/; 	rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+	cd hwif/; 			rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+	cd hwif/sdio/; 			rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+	cd crypto/; 		rm -fr *.mod.c *.mod *.o .*.cmd *.ko
+
