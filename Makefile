@@ -1,9 +1,9 @@
 KMODULE_NAME = ssv6x5x
 
-KBUILD_TOP := /root/ssv6x5x
-ifeq ($(MAKELEVEL),0)
+#KBUILD_TOP := /root/ssv6x5x
+#ifeq ($(MAKELEVEL),0)
 KBUILD_TOP := .
-endif
+#endif
 
 include $(KBUILD_TOP)/$(KMODULE_NAME).cfg
 include $(KBUILD_TOP)/platform-config.mak
